@@ -16,8 +16,11 @@ run: $(OUTPATH)
 bin/gui.o: src/gui.c src/gui.h | bin
 	$(CC) $(CFLAGS) -c $< -o $@
 
+external/raylib/src/Makefile: external/raylib
+	git submodule sync --recursive external/raylib
+
 bin/libraylib.a external/raylib/src/libraylib.a: external/raylib/src/Makefile | bin
-	make -C external/raylib/src CC=$(CC) AR=$(AR)
+	$(MAKE) -C external/raylib/src CC=$(CC) AR=$(AR)
 	mv external/raylib/src/libraylib.a $@
 
 bin:

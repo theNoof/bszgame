@@ -16,7 +16,7 @@ void init_gui(void) {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(800, 600, "bszgame");
     SetExitKey(KEY_NULL);
-    font = LoadFontEx("assets/agave/AgaveNerdFont-Regular.ttf", font_size, NULL, 0);
+    font = LoadFontEx("assets/agave/AgaveNerdFont-Regular.ttf", 120, NULL, 0);
     if(!IsFontValid(font)) {
         fprintf(stderr, "ERROR: invalid font.");
         exit(69);
@@ -31,8 +31,8 @@ void deinit_gui(void) {
 button make_button(int cx, int cy, int width, const char *text) {
     static const int height = 36;
     button res = {
-        .min_x = cx - (width / 2), .min_y = cy - (height / 2),
-        .max_x = cx + (width / 2), .max_y = cy + (height / 2),
+        .min_x = cx - width / 2, .min_y = cy - (height + 1) / 2,
+        .max_x = cx + width / 2, .max_y = cy + (height + 1) / 2,
     };
     int mx = GetMouseX();
     int my = GetMouseY();

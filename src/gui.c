@@ -1,6 +1,7 @@
 #include "gui.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 const Color color_deep_abyss       = { .r = 0x08, .g = 0x0d, .b = 0x15, .a = 0xff };
 const Color color_stormy_night     = { .r = 0x25, .g = 0x48, .b = 0x62, .a = 0xff };
@@ -26,10 +27,13 @@ const Color color_light_purple     = { .r = 0x75, .g = 0x33, .b = 0xbd, .a = 0xf
 const Color color_deep_purple      = { .r = 0x4c, .g = 0x17, .b = 0x85, .a = 0xff };
 
 // ao color scheme
-const Color color_bg             = color_deep_abyss;
-const Color color_fg             = color_winter_sky;
-const Color color_button_bg      = color_stormy_night;
-const Color color_button_hovered = color_nightfall_blue;
+const Color color_bg            = color_deep_abyss;
+const Color color_fg            = color_winter_sky;
+const Color color_elem_bg       = color_stormy_night;
+const Color color_elem_hovered  = color_nightfall_blue;
+const Color color_elem_selected = color_midnight_thunder;
+
+const size_t margin = 3;
 
 Font font;
 
@@ -52,27 +56,23 @@ void deinit_gui(void) {
     CloseWindow();
 }
 
-button make_button(int cx, int cy, int width, const char *text) {
+void make_button(button *b, int cx, int cy, int width, const char *text) {
     static const int height = 36;
-    button res = {
-        .min_x = cx - width / 2, .min_y = cy - (height + 1) / 2,
-        .max_x = cx + width / 2, .max_y = cy + (height + 1) / 2,
-    };
+    b->min_x = cx - width / 2;
+    b->min_y = cy - height / 2;
+    b->max_x = cx + (width + 1) / 2;
+    b->max_y = cy + (height + 1) / 2;
     int mx = GetMouseX();
     int my = GetMouseY();
+    b->is_clicked = IsMouseButtonPressed(MOUSE_BUTTON_LEFT)
+        && mx >= b->min_x && my >= b->min_y
+        && mx <= b->max_x && my <= b->max_y;
     DrawRectangle(
-        res.min_x, res.min_y,
+        b->min_x, b->min_y,
         width, height,
-        mx >= res.min_x && my >= res.min_y && mx <= res.max_x && my <= res.max_y ? color_button_bg : color_button_hovered
+        /*b->is_clicked ? color_elem_selected : */ mx >= b->min_x && my >= b->min_y && mx <= b->max_x && my <= b->max_y ? color_elem_bg : color_elem_hovered
     );
     make_label(cx, cy, text);
-    return res;
-}
-
-bool button_is_pressed(button b, int mouse_button) {
-    int mx = GetMouseX();
-    int my = GetMouseY();
-    return IsMouseButtonPressed(mouse_button) && mx >= b.min_x && my >= b.min_y && mx <= b.max_x && my <= b.max_y;
 }
 
 void make_label(int cx, int cy, const char *text) {
@@ -81,4 +81,70 @@ void make_label(int cx, int cy, const char *text) {
         (Vector2) { .x = cx - measured.x / 2, .y = cy - measured.y / 2 },
         font_size, font_spacing, color_fg
     );
+}
+
+void make_label_left(int x, int cy, const char *text) {
+    Vector2 measured = MeasureTextEx(font, text, font_size, font_spacing);
+    DrawTextEx(font, text,
+        (Vector2) { .x = x, .y = cy - measured.y / 2 },
+        font_size, font_spacing, color_fg
+    );
+}
+
+void make_text_field(text_field *t, int cx, int cy, int width) {
+    static const int height = 36;
+    t->min_x = cx - width / 2;
+    t->min_y = cy - height / 2;
+    t->max_x = cx + (width + 1) / 2;
+    t->max_y = cy + (height + 1) / 2;
+
+    int mx = GetMouseX();
+    int my = GetMouseY();
+    // if cursor is in area of text field
+    bool inr = mx >= t->min_x && my >= t->min_y && mx <= t->max_x && my <= t->max_y;
+
+    if(t->cursor_pos >= 0) {
+        const int k = GetCharPressed();
+        // exit from field if escape pressed or clicked outside.
+        if(IsKeyPressed(KEY_ESCAPE)
+           || (!inr && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))) {
+            t->cursor_pos = -1;
+        } else if(IsKeyPressed(KEY_BACKSPACE) || IsKeyPressedRepeat(KEY_BACKSPACE)) { // backspace
+            if(t->text_count > 0)
+                t->text[--t->text_count] = 0;
+            printf("text = \"%s\", text_count = %zu, text_capacity = %zu, cursor_pos = %d\n", t->text, t->text_count, t->text_capacity, t->cursor_pos);
+        } else if(IsKeyPressed(KEY_LEFT)) {
+            if(t->cursor_pos > 0)
+                t->cursor_pos--;
+            printf("text = \"%s\", text_count = %zu, text_capacity = %zu, cursor_pos = %d\n", t->text, t->text_count, t->text_capacity, t->cursor_pos);
+        } else if(IsKeyPressed(KEY_RIGHT)) {
+            if(t->cursor_pos < (int) t->text_count)
+                t->cursor_pos++;
+            printf("text = \"%s\", text_count = %zu, text_capacity = %zu, cursor_pos = %d\n", t->text, t->text_count, t->text_capacity, t->cursor_pos);
+        } else if(k != KEY_NULL) {
+            if(t->text_count + 1 >= t->text_capacity) { // extend array in text field
+                t->text_capacity += 32;
+                t->text = realloc(t->text, t->text_capacity);
+                for(size_t i = t->text_count; i < t->text_capacity; i++)
+                    t->text[i] = '\0';
+            }
+            t->text[t->text_count++] = k;
+            t->cursor_pos++;
+            printf("text = \"%s\", text_count = %zu, text_capacity = %zu, cursor_pos = %d\n", t->text, t->text_count, t->text_capacity, t->cursor_pos);
+        }
+    }
+    if(inr && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+        t->cursor_pos = t->text == NULL ? 0 : strlen(t->text) - 2;
+    DrawRectangle(
+        t->min_x, t->min_y,
+        width, height,
+        t->cursor_pos >= 0 ? color_elem_selected : inr ? color_elem_bg : color_elem_hovered
+    );
+    make_label_left(cx + margin - width / 2, cy, t->text);
+    if(t->cursor_pos >= 0) { // draw cursor
+        char text[t->cursor_pos + 1];
+        strncpy(text, t->text, t->cursor_pos);
+        const Vector2 offset = MeasureTextEx(font, text, font_size, font_spacing);
+        DrawRectangle(cx + margin + (int) offset.x - width / 2, cy - (height / 2 + 1) + 4, 2, font_size + 4, color_fg);
+    }
 }

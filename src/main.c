@@ -8,12 +8,34 @@ enum ui_state {
     UI_HOST_GAME,
 } ui_state = UI_MAIN_MENU;
 
+text_field hm_port_in = default_text_field;
+
+void make_host_menu(void) {
+    const int w = GetScreenWidth();
+    const int h = GetScreenHeight();
+
+    make_text_field(&hm_port_in, w / 2, h / 2, 300);
+}
+
 button mm_join_button = {0};
 button mm_host_button = {0};
 button mm_edit_button = {0};
 button mm_quit_button = {0};
 
-void render_main_menu(void) {
+void make_main_menu(void) {
+    if(mm_quit_button.is_clicked) {
+        deinit_gui();
+        exit(0);
+    } else if(mm_join_button.is_clicked) {
+        printf("imagine you joined a game now...\n");
+    } else if(mm_host_button.is_clicked) {
+        ui_state = UI_HOST_GAME;
+        make_host_menu();
+        return;
+    } else if(mm_edit_button.is_clicked) {
+        printf("imagine you could edit a game now...\n");
+    }
+
     const int w = GetScreenWidth();
     const int h = GetScreenHeight();
 
@@ -24,38 +46,18 @@ void render_main_menu(void) {
     make_button(&mm_quit_button, (w + 160) / 2, (h / 2) - 100, 140, "Quit");
 }
 
-text_field hm_port_in = default_text_field;
-
-void render_host_menu(void) {
-    const int w = GetScreenWidth();
-    const int h = GetScreenHeight();
-
-    make_text_field(&hm_port_in, w / 2, h / 2, 300);
-}
-
 int main(void) {
     init_gui();
 
     while(!WindowShouldClose()) {
-        if(mm_quit_button.is_clicked) {
-            deinit_gui();
-            exit(0);
-        } else if(mm_join_button.is_clicked) {
-            printf("imagine you joined a game now...\n");
-        } else if(mm_host_button.is_clicked) {
-            ui_state = UI_HOST_GAME;
-        } else if(mm_edit_button.is_clicked) {
-            printf("imagine you could edit a game now...\n");
-        }
-
         BeginDrawing();
         ClearBackground(GetColor(0x181818ff));
 
         DrawFPS(2, 2);
 
         switch(ui_state) {
-            case UI_MAIN_MENU: render_main_menu(); break;
-            case UI_HOST_GAME: render_host_menu(); break;
+            case UI_MAIN_MENU: make_main_menu(); break;
+            case UI_HOST_GAME: make_host_menu(); break;
         }
 
         EndDrawing();

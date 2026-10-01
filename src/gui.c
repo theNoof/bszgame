@@ -112,15 +112,12 @@ void make_text_field(text_field *t, int cx, int cy, int width) {
         } else if(IsKeyPressed(KEY_BACKSPACE) || IsKeyPressedRepeat(KEY_BACKSPACE)) { // backspace
             if(t->text_count > 0)
                 t->text[--t->text_count] = 0;
-            printf("text = \"%s\", text_count = %zu, text_capacity = %zu, cursor_pos = %d\n", t->text, t->text_count, t->text_capacity, t->cursor_pos);
         } else if(IsKeyPressed(KEY_LEFT)) {
             if(t->cursor_pos > 0)
                 t->cursor_pos--;
-            printf("text = \"%s\", text_count = %zu, text_capacity = %zu, cursor_pos = %d\n", t->text, t->text_count, t->text_capacity, t->cursor_pos);
         } else if(IsKeyPressed(KEY_RIGHT)) {
             if(t->cursor_pos < (int) t->text_count)
                 t->cursor_pos++;
-            printf("text = \"%s\", text_count = %zu, text_capacity = %zu, cursor_pos = %d\n", t->text, t->text_count, t->text_capacity, t->cursor_pos);
         } else if(k != KEY_NULL) {
             if(t->text_count + 1 >= t->text_capacity) { // extend array in text field
                 t->text_capacity += 32;
@@ -130,7 +127,6 @@ void make_text_field(text_field *t, int cx, int cy, int width) {
             }
             t->text[t->text_count++] = k;
             t->cursor_pos++;
-            printf("text = \"%s\", text_count = %zu, text_capacity = %zu, cursor_pos = %d\n", t->text, t->text_count, t->text_capacity, t->cursor_pos);
         }
     }
     if(inr && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
@@ -145,6 +141,7 @@ void make_text_field(text_field *t, int cx, int cy, int width) {
         char text[t->cursor_pos + 1];
         strncpy(text, t->text, t->cursor_pos);
         const Vector2 offset = MeasureTextEx(font, text, font_size, font_spacing);
+        printf("offset.x = %f\n", offset.x);
         DrawRectangle(cx + margin + (int) offset.x - width / 2, cy - (height / 2 + 1) + 4, 2, font_size + 4, color_fg);
     }
 }
